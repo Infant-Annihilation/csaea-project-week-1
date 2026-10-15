@@ -17,4 +17,5 @@ This analyzer is relatively basic and only analyzes the following scale types:
 * Harmonic Minor
 * Major Pentatonic
 * Minor Pentatonic
+
 It can also only really function if the MIDI file contains **only** the scale and nothing else. I do kind of want to make it so that it can look for scales and name them within a full-length song, but that would be too difficult for this short of a project(it could possibly be another project week tho!!).
