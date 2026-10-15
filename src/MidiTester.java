@@ -5,6 +5,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.TreeMap;
+import java.util.HashSet;
+import java.util.Set;
 
 /* Class as a tester for JMidi objects. This will eventually become
    a MIDI parser which will create a file of a certain format for
@@ -32,7 +34,7 @@ public class MidiTester {
     public static final int MIDI_PORT_MESSAGE = 0x21;
 
     // Relative file path of the MIDI file that you want to analyze.
-    public static final String FILE_NAME = ".\\MIDI_Files\\Fur_Elise.mid";
+    public static final String FILE_NAME = ".\\MIDI_Files\\F_sharp_major.mid";
 
     public static void main(String[] args) throws Exception {
 
@@ -43,6 +45,10 @@ public class MidiTester {
         // a LinkedList to store the notes when determining when they are turned off.
         Sequence sequence = MidiSystem.getSequence(new File(FILE_NAME));
         LinkedList<JMidiNote> notesPlayed = new LinkedList<>();
+
+        // Stores the unique notes used in the MIDI file
+        Set<Integer> pitchClasses = new HashSet<>();
+        int firstNote = -1;
 
         TreeMap<Long, JMidiNoteCluster> noteClusters = new TreeMap<>();
 
@@ -61,31 +67,39 @@ public class MidiTester {
                     ShortMessage sm = (ShortMessage) message;
                     // Is it a note (on) message?
                     if (sm.getCommand() == NOTE_ON && sm.getData2() != 0) {
+                        // Store the note's pitch class (0-11)
+                        int pitchClass = sm.getData1() % 12;
+                        // Store the first note played, if it hasn't been stored yet
+                        if (firstNote == -1) {
+                            firstNote = pitchClass;
+                        }
+
+                        pitchClasses.add(pitchClass);
+
                         // Creates the JMidi object and adds it to the LinkedList.
                         JMidiNote midiNote = new JMidiNote(event.getTick(), sm.getChannel(), sm.getData2(),
                                 sm.getData1(), sequence.getResolution());
                         notesPlayed.add(midiNote);
                     }
                     // Is it a note OFF message?
-                    else if(sm.getData2() == 0){
+                    else if (sm.getData2() == 0) {
                         // Creates specialized note-off JMidiNote
-                        JMidiNote noteOff = new JMidiNote(event.getTick(),sm.getChannel(), sm.getData1(), sequence.getResolution());
+                        JMidiNote noteOff = new JMidiNote(event.getTick(), sm.getChannel(), sm.getData1(), sequence.getResolution());
                         // Goes through all the notes already played
-                        for(JMidiNote possibleNote : notesPlayed){
-                            if(possibleNote.isOn && noteOff.isEndNoteOfThisNote(possibleNote)){
+                        for (JMidiNote possibleNote : notesPlayed) {
+                            if (possibleNote.isOn && noteOff.isEndNoteOfThisNote(possibleNote)) {
                                 // found it! Note hasn't been turned off and is the same as the note-off message
                                 // Sets tickStop and note length.
                                 possibleNote.setTickStop(noteOff.getTickStart());
                                 possibleNote.setUpNoteLength();
                                 possibleNote.isOn = false; // turns off the note
 
-                                if(!noteClusters.containsKey(possibleNote.getTickStart())){
+                                if (!noteClusters.containsKey(possibleNote.getTickStart())) {
                                     // new note cluster!
                                     JMidiNoteCluster noteCluster = new JMidiNoteCluster(possibleNote.getTickStart(),
                                             possibleNote);
-                                    noteClusters.put(possibleNote.getTickStart(),noteCluster);
-                                }
-                                else{
+                                    noteClusters.put(possibleNote.getTickStart(), noteCluster);
+                                } else {
                                     // old note cluster
                                     JMidiNoteCluster noteCluster = noteClusters.get(possibleNote.getTickStart());
                                     noteCluster.cluster.add(possibleNote);
@@ -123,7 +137,7 @@ public class MidiTester {
                         if (messageType == TIME_SIGNATURE) {
                             byte[] timeInfo = metaMessage.getData();
                             JMidiTimeSign time = new JMidiTimeSign(timeInfo);
-                            System.out.println("Tick #: " + event.getTick()+ time);
+                            System.out.println("Tick #: " + event.getTick() + time);
                         }
                         // Is it a key signature message?
                         else if (messageType == KEY_SIGNATURE) {
@@ -150,15 +164,15 @@ public class MidiTester {
                         }
                         // Random text/track name?
                         else if (messageType == TRACK_NAME || messageType == RANDOM_TEXT) {
-                                // NEVER USED IN SAMPLE BUT THIS IS WHAT WE WOULD DO
-                                System.out.println("TRACK NAME:");
-                                byte[] trackInfo = metaMessage.getData();
-                                for (byte info : trackInfo)
-                                    System.out.print((char) info);
-                                System.out.println();
+                            // NEVER USED IN SAMPLE BUT THIS IS WHAT WE WOULD DO
+                            System.out.println("TRACK NAME:");
+                            byte[] trackInfo = metaMessage.getData();
+                            for (byte info : trackInfo)
+                                System.out.print((char) info);
+                            System.out.println();
                         }
                         // No idea...
-                         else
+                        else
                             System.out.print("Type of MetaMessage: " + metaMessage.getType());
 
                         System.out.println();
@@ -169,31 +183,31 @@ public class MidiTester {
             }
 
             int i = 0;
-            for(long tickStart : noteClusters.keySet()){
+            for (long tickStart : noteClusters.keySet()) {
                 i++;
                 JMidiNoteCluster cluster = noteClusters.get(tickStart);
                 // format: starting tick, note, dynamic, ratio to quarter note
                 System.out.print(tickStart + "," + "[");
-                for(JMidiNote note : cluster.cluster){
+                for (JMidiNote note : cluster.cluster) {
                     System.out.print(note.channelNumber + ",");
                 }
 
                 System.out.print("],");
                 System.out.print("[");
-                for(JMidiNote note : cluster.cluster){
+                for (JMidiNote note : cluster.cluster) {
                     System.out.print(note + ",");
                 }
 
 
                 System.out.print("],");
                 System.out.print("[");
-                for(JMidiNote note : cluster.cluster){
+                for (JMidiNote note : cluster.cluster) {
                     System.out.print(note.getDynamic() + ",");
                 }
 
                 System.out.print("],");
                 System.out.print("[");
-                for(JMidiNote note : cluster.cluster){
+                for (JMidiNote note : cluster.cluster) {
                     System.out.print(note.getNoteInTermsOfQuarter() + ",");
                 }
 
@@ -201,13 +215,16 @@ public class MidiTester {
             }
         }
 
+        String scaleName = identifyScale(pitchClasses, firstNote);
+        System.out.println();
+        System.out.println("Scale: " + scaleName);
     }
 
     public static class JMidiNoteCluster implements Comparable<JMidiNoteCluster> {
         public long startingTick;
         public ArrayList<JMidiNote> cluster;
 
-        public JMidiNoteCluster(long start, JMidiNote firstNote){
+        public JMidiNoteCluster(long start, JMidiNote firstNote) {
             startingTick = start;
             cluster = new ArrayList<>();
             cluster.add(firstNote);
@@ -215,19 +232,62 @@ public class MidiTester {
 
         @Override
         public int compareTo(JMidiNoteCluster o) {
-            if(this.startingTick < o.startingTick)
+            if (this.startingTick < o.startingTick)
                 return -1;
-            else if(this.startingTick > o.startingTick)
+            else if (this.startingTick > o.startingTick)
                 return 1;
             else
                 return 0;
         }
     }
+
+    public static String identifyScale(Set<Integer> notes, int root) {
+
+        if (root < 0 || root > 11) {
+            return "Unknown scale";
+        }
+
+        // Semitone patterns for common scales
+        int[][] scalePatterns = {
+                {0, 2, 4, 5, 7, 9, 11}, // Major
+                {0, 2, 3, 5, 7, 8, 10}, // Natural minor
+                {0, 2, 3, 5, 7, 8, 11}, // Harmonic minor
+                {0, 2, 3, 5, 7, 9, 11}, // Melodic Minor
+                {0, 2, 4, 7, 9},        // Major pentatonic
+                {0, 3, 5, 7, 10}        // Minor pentatonic
+        };
+
+        String[] scaleTypes = {
+                "major",
+                "natural minor",
+                "harmonic minor",
+                "melodic minor",
+                "major pentatonic",
+                "minor pentatonic"
+        };
+
+        String[] noteNames = {
+                "C", "C#", "D", "D#", "E", "F",
+                "F#", "G", "G#", "A", "A#", "B"
+        };
+
+        // Try every possible root note
+
+        for (int i = 0; i < scalePatterns.length; i++) {
+
+            Set<Integer> expectedNotes = new HashSet<>();
+
+            for (int interval : scalePatterns[i]) {
+                expectedNotes.add((root + interval) % 12);
+            }
+
+            if (notes.equals(expectedNotes)) {
+                return noteNames[root] + " " + scaleTypes[i];
+            }
+        }
+
+        return "Unknown scale";
+
+
+    }
 }
-
-
-
-
-
-
-
