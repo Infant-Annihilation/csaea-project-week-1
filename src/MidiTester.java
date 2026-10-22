@@ -34,7 +34,7 @@ public class MidiTester {
     public static final int MIDI_PORT_MESSAGE = 0x21;
 
     // Relative file path of the MIDI file that you want to analyze.
-    public static final String FILE_NAME = ".\\MIDI_Files\\F_sharp_major.mid";
+    public static final String FILE_NAME = ".\\MIDI_Files\\G_Dorian_scale.mid";
 
     public static void main(String[] args) throws Exception {
 
@@ -253,6 +253,11 @@ public class MidiTester {
                 {0, 2, 3, 5, 7, 8, 10}, // Natural minor
                 {0, 2, 3, 5, 7, 8, 11}, // Harmonic minor
                 {0, 2, 3, 5, 7, 9, 11}, // Melodic Minor
+                {0, 2, 3, 5, 7, 9, 10}, // Dorian
+                {0, 1, 3, 5, 7, 8, 10}, // Phrygian
+                {0, 2, 4, 6, 7, 9, 11}, // Lydian
+                {0, 2, 4, 5, 7, 9, 10}, // Mixolydian
+                {0, 1, 3, 5, 6, 8, 10}, // Locrian
                 {0, 2, 4, 7, 9},        // Major pentatonic
                 {0, 3, 5, 7, 10}        // Minor pentatonic
         };
@@ -262,6 +267,11 @@ public class MidiTester {
                 "natural minor",
                 "harmonic minor",
                 "melodic minor",
+                "dorian",
+                "phrygian",
+                "lydian",
+                "mixolydian",
+                "locrian",
                 "major pentatonic",
                 "minor pentatonic"
         };
